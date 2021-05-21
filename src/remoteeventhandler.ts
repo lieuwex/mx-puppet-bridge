@@ -298,48 +298,6 @@ export class RemoteEventHandler {
 					event_id: origEventId,
 				},
 			};
-			try {
-				const info = await this.bridge.getEventInfo(mxid, origEventId, client);
-				if (info) {
-					if (info.message) {
-						if (!info.message.formattedBody) {
-							info.message.formattedBody = escapeHtml(info.message.body).replace(/\n/g, "<br>");
-						}
-						const bodyParts = this.preprocessBody(info.message.body).split("\n");
-						bodyParts[0] = `${info.message.emote ? "* " : ""}<${this.preprocessBody(info.user.mxid)}> ${bodyParts[0]}`;
-						send.body = `${bodyParts.map((l) => `> ${l}`).join("\n")}\n\n${send.body}`;
-						const matrixReplyRegex = /^<mx-reply>.*<\/mx-reply>/gs;
-						const messageWithoutNestedReplies = info.message.formattedBody?.replace(matrixReplyRegex, "");
-
-						const richHeader = `<mx-reply><blockquote>
-	<a href="https://matrix.to/#/${mxid}/${origEventId}">In reply to</a>
-	${info.message.emote ? "* " : ""}<a href="https://matrix.to/#/${info.user.mxid}">${info.user.mxid}</a>
-	<br>${messageWithoutNestedReplies}
-</blockquote></mx-reply>`;
-						send.formatted_body = richHeader + send.formatted_body;
-					} else if (info.file) {
-						let msg = {
-							image: "an image",
-							audio: "an audio file",
-							video: "a video",
-							sticker: "a sticker",
-						}[info.file.type];
-						if (!msg) {
-							msg = "a file";
-						}
-						const plainHeader = `> <${this.preprocessBody(info.user.mxid)}> sent ${msg}.\n\n`;
-						send.body = plainHeader + send.body;
-						const richHeader = `<mx-reply><blockquote>
-	<a href="https://matrix.to/#/${mxid}/${origEventId}">In reply to</a>
-	<a href="https://matrix.to/#/${info.user.mxid}">${info.user.mxid}</a>
-	<br>sent ${msg}.
-</blockquote></mx-reply>`;
-						send.formatted_body = richHeader + send.formatted_body;
-					}
-				}
-			} catch (err) {
-				log.warn("Failed to add reply fallback", err.error || err.body || err);
-			}
 		} else {
 			log.warn("Couldn't find event, sending as normal message...");
 		}
